@@ -74,10 +74,12 @@ function module.GenerateMeshModel(obj: string): (DynamicMesh)
 					rblxVertex = vertexIDs[vertexID]
 					if rblxVertex == nil then
 						rblxVertex = mesh:AddVertex(vertices[vertexID])
+						mesh:SetVertexColour(rblxVertex, Color3.new(1,1,1))
 						vertexIDs[vertexID] = rblxVertex
 					end
 				else
 					rblxVertex = mesh:AddVertex(vertices[vertexID])
+					mesh:SetVertexColour(rblxVertex, Color3.new(1,1,1))
 					if uv ~= nil and #uv > 0 then
 						mesh:SetUV(rblxVertex, UVs[tonumber(uv)])
 					end
