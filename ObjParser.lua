@@ -1,23 +1,35 @@
+--[=[
+	ObjParser by JoshieGemFinder
+	Converts a .obj file (in string form) to a DynamicMesh
+	
+	https://github.com/JoshieGemFinder/RBLX-Obj2DynamicMesh
+]=]
+
 local module = {}
 
-function module.GenerateMesh(obj)
+--[[
+	Returns the converted DynamicMesh
+	obj: String contents of the .obj file
+]]
+function module.GenerateMeshModel(obj: string): (DynamicMesh)
+
 	assert(obj and type(obj) == 'string', "bad argument #1 to GenerateMesh (string expected, got " .. type(obj) .. ")")
-	
+
 	--create mesh
 	local mesh = Instance.new("DynamicMesh")
-	mesh.Parent = workspace
-	
+	mesh.Parent = script
+
 	local vertexCount = 0 -- for negative indices
-	
+
 	local vertices = {} -- list of vertex positions
 	local vertexIDs = {} -- list of untextured unnormaled roblox vertices, for if those will be needed
-	
+
 	-- list of UVs
 	local UVs = {}
 
 	-- list of normals
 	local normals = {}
-	
+
 	local lines = string.gmatch(obj, "%s*([^\r\n]+)%s*") --split lines and trim whitespace
 	local line = nil
 	repeat
@@ -42,21 +54,21 @@ function module.GenerateMesh(obj)
 			table.insert(UVs, Vector2.new(tonumber(nextToken()), tonumber(nextToken())))
 		elseif tkn == "vn" then
 			table.insert(normals, Vector3.new(tonumber(nextToken()), tonumber(nextToken()), tonumber(nextToken())))
-			
+
 		elseif tkn == "f" then
 			local faceVertices = {}
-			
+
 			tkn = nextToken()
 			while tkn ~= nil do
 				local vertex, uv, normal = string.match(tkn, "([^/]+)[/]?([^/]*)[/]?([^/]*)")
-				
+
 				vertex = tonumber(vertex)
-				
+
 				local vertexID = vertex
 				if vertex < 0 then
 					vertexID = vertexCount + vertex + 1
 				end
-				
+
 				local rblxVertex = nil
 				if uv == nil and normal == nil then
 					rblxVertex = vertexIDs[vertexID]
@@ -74,29 +86,38 @@ function module.GenerateMesh(obj)
 						mesh:SetVertexNormal(rblxVertex, normals[tonumber(normal)])
 					end
 				end
-				
+
 				table.insert(faceVertices, rblxVertex)
 				tkn = nextToken()
 			end
-			
+
 			local n = #faceVertices
-			
+
 			--specification says triangle fan, so we're using triangle fan
 			for i=1, n-2 do
 				mesh:AddTriangle(faceVertices[1], faceVertices[i + 1], faceVertices[i + 2])
 			end
-			
-			
+
+
 		else --mtllib, usemtl, g, s, l, p
 			warn(tkn .. " is not currently supported.")
 		end
 	until line == nil
 	
+	return mesh
+end
+
+--[[
+	Returns the MeshPart and the DynamicMesh
+	obj: String contents of the .obj file
+]]
+function module.GenerateMesh(obj: string): (MeshPart, DynamicMesh)
+	local mesh = module.GenerateMeshModel(obj)
 	
 	local meshPart = mesh:CreateMeshPartAsync(Enum.CollisionFidelity.Default)
 	mesh.Parent = meshPart
 	
-	return meshPart
+	return meshPart, mesh
 end
 
 return module
